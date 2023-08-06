@@ -1,14 +1,18 @@
+const zmq = require('zeromq');
+
 const TradingView = require('../main');
 
-/*
-  This example creates a BTCEUR daily chart
-*/
-
 const client = new TradingView.Client(); // Creates a websocket client
-
 const chart = new client.Session.Chart(); // Init a Chart session
 
-chart.setMarket('BINANCE:BTCEUR', { // Set the market
+if (process.argv.length < 4) {
+  process.exit();
+}
+
+const sock = zmq.socket('push');
+sock.bindSync(process.argv[3]);
+
+chart.setMarket(process.argv[2], { // Set the market
   timeframe: 'D',
 });
 
@@ -24,40 +28,21 @@ chart.onSymbolLoaded(() => { // When the symbol is successfully loaded
 chart.onUpdate(() => { // When price changes
   if (!chart.periods[0]) return;
   console.log(`[${chart.infos.description}]: ${chart.periods[0].close} ${chart.infos.currency_id}`);
-  // Do something...
+
+  const [exchange, symbol] = process.argv[2].split(':');
+
+  const data = {
+    time: Date.now(),
+    exchange,
+    symbol,
+    ticker_period: 60,
+    ticker_open: chart.periods[0].close,
+    ticker_high: chart.periods[0].close,
+    ticker_low: chart.periods[0].close,
+    ticker_close: chart.periods[0].close,
+  };
+
+  console.log(data);
+
+  sock.send(JSON.stringify(data));
 });
-
-// Wait 5 seconds and set the market to BINANCE:ETHEUR
-setTimeout(() => {
-  console.log('\nSetting market to BINANCE:ETHEUR...');
-  chart.setMarket('BINANCE:ETHEUR', {
-    timeframe: 'D',
-  });
-}, 5000);
-
-// Wait 10 seconds and set the timeframe to 15 minutes
-setTimeout(() => {
-  console.log('\nSetting timeframe to 15 minutes...');
-  chart.setSeries('15');
-}, 10000);
-
-// Wait 15 seconds and set the chart type to "Heikin Ashi"
-setTimeout(() => {
-  console.log('\nSetting the chart type to "Heikin Ashi"s...');
-  chart.setMarket('BINANCE:ETHEUR', {
-    timeframe: 'D',
-    type: 'HeikinAshi',
-  });
-}, 15000);
-
-// Wait 20 seconds and close the chart
-setTimeout(() => {
-  console.log('\nClosing the chart...');
-  chart.delete();
-}, 20000);
-
-// Wait 25 seconds and close the client
-setTimeout(() => {
-  console.log('\nClosing the client...');
-  client.end();
-}, 25000);
