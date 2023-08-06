@@ -10,7 +10,7 @@ if (process.argv.length < 4) {
 }
 
 const sock = zmq.socket('push');
-sock.bindSync(process.argv[3]);
+sock.connect(process.argv[3]);
 
 chart.setMarket(process.argv[2], { // Set the market
   timeframe: 'D',
