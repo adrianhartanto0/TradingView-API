@@ -19,7 +19,10 @@ COPY . .
 ARG host
 ARG symbol
 
+ENV HOST ${host}
+ENV SYMBOL ${symbol}
+
 RUN echo $host
 RUN echo $symbol
 
-CMD [ "node", "examples/SimpleChart.js", $symbol, $host]
+CMD node examples/SimpleChart.js ${SYMBOL} ${HOST}
