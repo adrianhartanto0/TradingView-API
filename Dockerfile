@@ -18,11 +18,15 @@ COPY . .
 
 ARG host
 ARG symbol
+ARG session
+ARG signature
 
 ENV HOST ${host}
 ENV SYMBOL ${symbol}
+ENV SESSION ${session}
+ENV SIGNATURE ${signature}
 
 RUN echo $host
 RUN echo $symbol
 
-CMD node examples/SimpleChart.js ${SYMBOL} ${HOST}
+CMD node examples/SimpleChart.js ${SYMBOL} ${HOST} ${SESSION} ${SIGNATURE}
