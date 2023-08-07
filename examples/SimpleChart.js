@@ -2,47 +2,54 @@ const zmq = require('zeromq');
 
 const TradingView = require('../main');
 
-const client = new TradingView.Client(); // Creates a websocket client
-const chart = new client.Session.Chart(); // Init a Chart session
-
-if (process.argv.length < 4) {
-  process.exit();
-}
-
-const sock = zmq.socket('push');
+const sock = zmq.socket('req');
 sock.connect(process.argv[3]);
 
-chart.setMarket(process.argv[2], { // Set the market
-  timeframe: 'D',
-});
+/* eslint-disable */
+(async function() {
+  // const user = await TradingView.loginUser('adrianasdfs@protonmail.com', 'AbeXLq12*', false);
+  
+  if (process.argv.length < 6) {
+    process.exit();
+  }
 
-chart.onError((...err) => { // Listen for errors (can avoid crash)
-  console.error('Chart error:', ...err);
-  // Do something...
-});
+  const client = new TradingView.Client({
+    token: process.argv[4],
+    signature: process.argv[5]
+  });
 
-chart.onSymbolLoaded(() => { // When the symbol is successfully loaded
-  console.log(`Market "${chart.infos.description}" loaded !`);
-});
+  const chart = new client.Session.Chart(); // Init a Chart session
 
-chart.onUpdate(() => { // When price changes
-  if (!chart.periods[0]) return;
-  console.log(`[${chart.infos.description}]: ${chart.periods[0].close} ${chart.infos.currency_id}`);
+  chart.setMarket(process.argv[2], { // Set the market
+    timeframe: 'D',
+  });
 
-  const [exchange, symbol] = process.argv[2].split(':');
+  chart.onError((...err) => { // Listen for errors (can avoid crash)
+    console.error('Chart error:', ...err);
+  });
 
-  const data = {
-    time: Date.now(),
-    exchange,
-    symbol,
-    ticker_period: 60,
-    ticker_open: chart.periods[0].close,
-    ticker_high: chart.periods[0].close,
-    ticker_low: chart.periods[0].close,
-    ticker_close: chart.periods[0].close,
-  };
+  chart.onSymbolLoaded(() => { // When the symbol is successfully loaded
+    console.log(`Market "${chart.infos.description}" loaded !`);
+  });
 
-  console.log(data);
+  chart.onUpdate(() => { // When price changes
+    if (!chart.periods[0]) return;
+    console.log(`[${chart.infos.description}]: ${chart.periods[0].close} ${chart.infos.currency_id}`);
 
-  sock.send(JSON.stringify(data));
-});
+    const [exchange, symbol] = process.argv[2].split(':');
+
+    const data = {
+      time: Date.now(),
+      exchange,
+      symbol,
+      ticker_period: 60,
+      ticker_open: chart.periods[0].close,
+      ticker_high: chart.periods[0].close,
+      ticker_low: chart.periods[0].close,
+      ticker_close: chart.periods[0].close,
+    };
+
+    sock.send(JSON.stringify(data));
+  });
+
+})();
